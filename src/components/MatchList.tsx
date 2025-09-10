@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MatchData, FilterOptions } from '@/types/pubg';
+import { groupConsecutiveMatches, MatchGroup, formatDateRange } from '@/utils/matchGrouping';
 
 interface MatchListProps {
   matches: MatchData[];
@@ -20,8 +21,33 @@ export default function MatchList({ matches, selectedMatches, onMatchToggle, onF
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set());
   const [loadingTeammates, setLoadingTeammates] = useState<Set<string>>(new Set());
 
+  // 매치 그룹 계산
+  const matchGroups = useMemo(() => groupConsecutiveMatches(matches), [matches]);
+  
   const uniqueGameModes = [...new Set(matches.map(m => m.gameMode))];
   const uniqueMaps = [...new Set(matches.map(m => m.mapName))];
+
+  // 날짜 그룹 필터 핸들러
+  const handleDateGroupSelect = (group: MatchGroup) => {
+    // 현재 그룹의 매치들이 모두 선택되어 있는지 확인
+    const isGroupSelected = group.matchIds.every(matchId => selectedMatches.includes(matchId));
+    
+    if (isGroupSelected) {
+      // 그룹이 모두 선택되어 있으면 해제
+      group.matchIds.forEach(matchId => {
+        if (selectedMatches.includes(matchId)) {
+          onMatchToggle(matchId);
+        }
+      });
+    } else {
+      // 그룹이 선택되어 있지 않으면 모두 선택
+      group.matchIds.forEach(matchId => {
+        if (!selectedMatches.includes(matchId)) {
+          onMatchToggle(matchId);
+        }
+      });
+    }
+  };
 
   const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -231,6 +257,72 @@ export default function MatchList({ matches, selectedMatches, onMatchToggle, onF
           >
             필터 초기화
           </button>
+        </div>
+      )}
+
+      {/* 날짜별 연속 경기 필터 */}
+      {matchGroups.length > 1 && (
+        <div className="bg-gray-900 p-4 rounded-xl border border-blue-500/30">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-blue-400">연속 경기 날짜별 선택</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {matchGroups.map((group, index) => {
+              const isGroupSelected = group.matchIds.every(matchId => selectedMatches.includes(matchId));
+              const isPartiallySelected = group.matchIds.some(matchId => selectedMatches.includes(matchId)) && !isGroupSelected;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleDateGroupSelect(group)}
+                  className={`group relative px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm ${
+                    isGroupSelected
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/30 transform scale-105'
+                      : isPartiallySelected
+                      ? 'bg-gradient-to-r from-yellow-600/20 to-orange-600/20 text-yellow-300 border border-yellow-500/50'
+                      : 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600'
+                  }`}
+                  title={formatDateRange(group.startDate, group.endDate)}
+                >
+                  {isPartiallySelected && (
+                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg blur-sm"></div>
+                  )}
+                  <div className="relative flex items-center gap-2">
+                    <span>{group.displayDate}</span>
+                    {isGroupSelected && (
+                      <svg className="w-4 h-4 text-green-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    {isPartiallySelected && (
+                      <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-sm text-gray-400">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full"></div>
+                <span>모두 선택됨</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-yellow-600/50 to-orange-600/50 border border-yellow-500/50 rounded-full"></div>
+                <span>일부 선택됨</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-800 border border-gray-600 rounded-full"></div>
+                <span>선택 안됨</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
