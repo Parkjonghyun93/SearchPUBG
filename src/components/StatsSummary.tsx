@@ -1,6 +1,7 @@
 'use client';
 
 import { MatchData, PlayerStats } from '@/types/pubg';
+import DamageChart from './DamageChart';
 
 interface StatsSummaryProps {
   matches: MatchData[];
@@ -204,6 +205,8 @@ export default function StatsSummary({ matches }: StatsSummaryProps) {
           </div>
         )}
       </div>
+      
+      <DamageChart matches={matches} />
     </div>
   );
 }
