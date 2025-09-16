@@ -153,10 +153,10 @@ export default function Home() {
             </div>
             <div className="text-left">
               <h1 className="text-5xl md:text-7xl font-black mb-2 bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text text-transparent tracking-tight">
-                으핳핳하하하
+                만재콩딜량100넘기기원28일차
               </h1>
               <p className="text-gray-400 text-xl md:text-2xl font-light text-center">
-                으히힣히힣히
+                만재콩부랄딱딱콩s
               </p>
             </div>
           </div>
